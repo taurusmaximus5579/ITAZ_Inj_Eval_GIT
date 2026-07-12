@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from image_cache_manager import get_cache
+from image_utils import persist_or_cache_figure
 
 
 def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
@@ -16,8 +18,7 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
     if not (isinstance(boost_range, tuple) and isinstance(hold_range, tuple) and isinstance(zero_range, tuple)):
         raise ValueError("Fehler: boost_range, hold_range und zero_range müssen Tupel sein.")
 
-    bilder_pfad = os.path.join(ordnerpfad, "Bilder") if ordnerpfad else os.path.join(".", "Bilder")
-    os.makedirs(bilder_pfad, exist_ok=True)
+    # Bilder werden nur im Memory gehalten, nicht auf der Festplatte gespeichert
 
     result_all = {}
     colors = ["black", "blue", "green", "red", "orange", "purple", "brown"]
@@ -91,9 +92,8 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
             plt.axvline(result["ICS_OFF_time"], color="purple", linestyle=":", linewidth=1, label=f"Duration = {result['ICS_ON']:.6f}s")
 
         plt.legend(fontsize=8, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
-        einzel_plot_path = os.path.join(bilder_pfad, f"{key}_Stromsignal.png")
-        plt.savefig(einzel_plot_path)
-        plt.close()
+        fig = plt.gcf()
+        persist_or_cache_figure(fig, image_cache=get_cache(), category="ICS", name=f"Signal_{idx}", save_to_disk=False)
 
     for val in boost_medians:
         plt.axhline(y=val, color="red", linestyle="--", linewidth=1)
@@ -110,11 +110,10 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
     plt.xlabel("Time")
     plt.ylabel("Injector Control Signal (A)")
     plt.grid(True)
-    main_plot_path = os.path.join(bilder_pfad, "Stromsignale.png")
-    plt.savefig(main_plot_path)
-    plt.close()
+    fig = plt.gcf()
+    persist_or_cache_figure(fig, image_cache=get_cache(), category="ICS", name="Overview", save_to_disk=False)
 
-    def plot_median_histogram(data, title, color, filename):
+    def plot_median_histogram(data, title, color, name):
         if not data:
             return
         mean = np.mean(data)
@@ -129,13 +128,12 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
         plt.text(0.95, 0.95, f"Mittelwert = {mean:.5f}\nStd = {std:.5f}", transform=plt.gca().transAxes, verticalalignment='top', horizontalalignment='right', bbox=dict(facecolor='white', alpha=0.5))
         plt.legend().set_visible(False)
         plt.tight_layout()
-        hist_path = os.path.join(bilder_pfad, filename)
-        plt.savefig(hist_path)
-        plt.close()
+        fig = plt.gcf()
+        persist_or_cache_figure(fig, image_cache=get_cache(), category="ICS", name=name, save_to_disk=False)
 
-    plot_median_histogram(boost_medians, "Boost Current Histogram", "red", "Boost_Histogram.png")
-    plot_median_histogram(hold_medians, "Hold Current Histogram", "green", "Hold_Histogram.png")
-    plot_median_histogram(zero_medians, "Zero Current Histogram", "blue", "Zero_Histogram.png")
+    plot_median_histogram(boost_medians, "Boost Current Histogram", "red", "Boost")
+    plot_median_histogram(hold_medians, "Hold Current Histogram", "green", "Hold")
+    plot_median_histogram(zero_medians, "Zero Current Histogram", "blue", "Zero")
     plot_median_histogram(ics_on_times, "ICS_ON Time Histogram", "orange", "ICS_ON_Histogram.png")
     plot_median_histogram(ics_off_times, "ICS_OFF Time Histogram", "purple", "ICS_OFF_Histogram.png")
 
@@ -152,5 +150,4 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
     print_stats("ICS_ON Zeit", ics_on_times)
     print_stats("ICS_OFF Zeit", ics_off_times)
 
-    print(f"\n✅ Alle Diagramme gespeichert unter: {bilder_pfad}")
     return result_all

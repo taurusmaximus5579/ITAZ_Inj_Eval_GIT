@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 
 from Fkt.build_shot_stats01 import build_shot_stats
 from Fkt.plot_scatter_matrix01 import plot_scatter_matrix
+from image_cache_manager import get_cache
+from image_utils import persist_or_cache_figure
 
 
 def stats_with_percent(arr):
@@ -73,8 +75,8 @@ def Eval_Shot2Shot(signal_dict, T, min_time_step, ICS_Eval_Result, hub_times, or
 
     axes[-1].set_xlabel("Zeit [s]")
     fig.tight_layout()
-    fig.savefig(os.path.join(bilder_pfad, "Shot2Shot_Signale.png"), dpi=150)
-    plt.close(fig)
+    signal_path = os.path.join(bilder_pfad, "Shot2Shot_Signale.png")
+    persist_or_cache_figure(fig, output_path=signal_path, image_cache=get_cache(), category="Shot2Shot", name="Signals", save_to_disk=True)
 
     for sig_name in signal_names:
         fig, ax = plt.subplots(figsize=(10, 6))
@@ -271,13 +273,12 @@ def Eval_Shot2Shot(signal_dict, T, min_time_step, ICS_Eval_Result, hub_times, or
             table.set_fontsize(10)
             fig.subplots_adjust(bottom=0.55)
 
-        dateiname = f"{sig_name}.png"
-        fig.savefig(os.path.join(bilder_pfad, dateiname), dpi=150)
-        plt.close(fig)
+        signal_file = os.path.join(bilder_pfad, f"{sig_name}.png")
+        persist_or_cache_figure(fig, output_path=signal_file, image_cache=get_cache(), category="Shot2Shot", name=f"Signal_{sig_name}", save_to_disk=True)
 
     df_stats = build_shot_stats(signal_dict, T, hub_times, ICS_Eval_Result)
-    scatter_path = os.path.join(ordnerpfad, "Bilder", "Shot_Feature_ScatterMatrix.png")
-    plot_scatter_matrix(df_stats, scatter_path)
+    scatter_path = os.path.join(bilder_pfad, "Shot_Feature_ScatterMatrix")
+    plot_scatter_matrix(df_stats, out_path=scatter_path, image_cache=get_cache())
 
     shot_feature_table = {}
     all_measurements = list(next(iter(signal_dict.values())).keys())

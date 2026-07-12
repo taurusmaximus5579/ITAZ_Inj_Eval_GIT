@@ -2,6 +2,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from image_cache_manager import get_cache
+from image_utils import persist_or_cache_figure
 
 
 def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
@@ -107,8 +109,7 @@ def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
 
     regression_info = {"Typ": regression_type, "Koeffizienten": coeffs, "R²": r2}
     ordnername = os.path.basename(os.path.normpath(ordnerpfad)) if ordnerpfad else "Unbekannter_Ordner"
-    bilder_pfad = os.path.join(ordnerpfad if ordnerpfad else ".", "Bilder")
-    os.makedirs(bilder_pfad, exist_ok=True)
+    # Bilder werden nur im Memory gehalten
     results_pfad = os.path.join(ordnerpfad if ordnerpfad else ".", "Results")
     os.makedirs(results_pfad, exist_ok=True)
 
@@ -133,9 +134,8 @@ def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
     plt.legend(loc='upper left')
     plt.text(x.max() * 0.95, y.min() + 0.5 * (y.max() - y.min()), f"{equation}\nR² = {r2:.4f}", fontsize=14, ha='right', va='center', bbox=dict(facecolor='white', edgecolor='gray'))
     plt.tight_layout()
-    png_path = os.path.join(bilder_pfad, "RateDownCurve.png")
-    plt.savefig(png_path)
-    plt.close()
+    fig_mpl = plt.gcf()
+    persist_or_cache_figure(fig_mpl, image_cache=get_cache(), category="RateDown", name="RateDownCurve", save_to_disk=False)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Messwerte'))
@@ -146,5 +146,5 @@ def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
     html_path = os.path.join(results_pfad, "RateDownCurve.html")
     fig.write_html(html_path)
 
-    print(f"Plots gespeichert unter:\nPNG: {png_path}\nHTML: {html_path}")
+    print(f"✅ Interactive plot saved: {html_path}")
     return mass_info, regression_info

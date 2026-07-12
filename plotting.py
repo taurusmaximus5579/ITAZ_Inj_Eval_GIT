@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 from Fkt.Fig01 import plot_signals
 from Fkt.FigDict02 import plot_grouped_signals_with_time
 from Fkt.Intpol02 import interpolate_nested_signal_dict
+from image_cache_manager import get_cache
+from image_utils import persist_or_cache_figure
 
 
 def plot_signals_per_file(signal_dict, t_common, output_folder):
@@ -53,15 +55,12 @@ def plot_signals_per_file(signal_dict, t_common, output_folder):
         plt.legend(lines, labels, loc='upper right')
 
         plt.tight_layout()
-        img_path = os.path.join(output_folder, f"{fname}_signals.png")
-        plt.savefig(img_path, dpi=300)
-        plt.close()
+        persist_or_cache_figure(fig, image_cache=get_cache(), category="Signals", name=fname.replace('.csv', ''), save_to_disk=False)
 
 
-def create_plots(signal_dict, T, result_folder, bilder_folder, rawdata_by_file=None, raw_data_plot=False):
+def create_plots(signal_dict, T, result_folder, rawdata_by_file=None, raw_data_plot=False):
     plot_path = plot_grouped_signals_with_time(signal_dict, T, result_folder, rawdata_by_file=rawdata_by_file)
     print(f"📊 Diagramm gespeichert unter: {plot_path}")
-    plot_signals_per_file(signal_dict, T, bilder_folder)
 
     if raw_data_plot and rawdata_by_file:
         # Erstelle DataFrames mit allen Signalen pro Datei (raw + processed)

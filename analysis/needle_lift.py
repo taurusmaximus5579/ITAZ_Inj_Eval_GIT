@@ -3,11 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from scipy.integrate import cumulative_trapezoid
+from image_cache_manager import get_cache
+from image_utils import persist_or_cache_figure
 
 
 def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None):
-    bilder_pfad = os.path.join(ordnerpfad, "Bilder") if ordnerpfad else os.path.join(".", "Bilder")
-    os.makedirs(bilder_pfad, exist_ok=True)
+    # Bilder werden nur im Memory gehalten, nicht auf der Festplatte gespeichert
 
     T = np.asarray(T)
     dt = np.diff(T)
@@ -83,10 +84,8 @@ def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None):
     plt.ylabel("Needle Lift (mm)")
     plt.grid(True)
     plt.tight_layout()
-    overview_path = os.path.join(bilder_pfad, "NeedleLift_Overview.png")
-    plt.savefig(overview_path)
-    print(f"✅ Übersicht gespeichert: {overview_path}")
-    plt.close()
+    fig = plt.gcf()
+    persist_or_cache_figure(fig, image_cache=get_cache(), category="NeedleLift", name="Overview", save_to_disk=False)
 
     for name, data in needle_lifts.items():
         if len(data) == len(T):
@@ -104,10 +103,8 @@ def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None):
             plt.grid(True)
             plt.legend()
             plt.tight_layout()
-            single_path = os.path.join(bilder_pfad, f"NeedleLift_{name}.png")
-            plt.savefig(single_path)
-            print(f"✅ Einzelplot gespeichert: {single_path}")
-            plt.close()
+            fig = plt.gcf()
+            persist_or_cache_figure(fig, image_cache=get_cache(), category="NeedleLift", name=f"Single_{name}", save_to_disk=False)
 
     start_times = [v['start_time'] for v in hub_times.values() if v['start_time'] is not None]
     end_times = [v['end_time'] for v in hub_times.values() if v['end_time'] is not None]
@@ -129,12 +126,8 @@ def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None):
         axes[1].grid(True)
 
         plt.tight_layout()
-        hist_path = os.path.join(bilder_pfad, "NeedleLift_Histogram.png")
-        plt.savefig(hist_path)
-        print(f"✅ Histogramm gespeichert: {hist_path}")
-        plt.close()
+        persist_or_cache_figure(fig, image_cache=get_cache(), category="NeedleLift", name="Histogram", save_to_disk=False)
     else:
         print("⚠️ Nicht genügend gültige Start- oder Endzeiten für Histogramm.")
 
-    print(f"\n✅ Alle Diagramme gespeichert unter: {bilder_pfad}")
     return integrated_results, hub_times

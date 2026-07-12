@@ -25,7 +25,7 @@ XX.XX.2025 Lars Köhler
 [✅] In der Gainauswertung Nadelhubintegral
 [✅] Optimierung InjRate03 -> Rate und Masse nur solange Nadel offen ist -> Entfernen von Rauschen in der Massenauswertung
 [ ] Entpivotisiertes Diagramm für Statistikauswertung
-[ ] Auswahlfeld zur Bilder generieren
+[✅] Auswahlfeld zur Bilder generieren
 [✅] Komplette Umstrukturierung des Skripts und Go2Git
 """
 
@@ -38,6 +38,7 @@ from PIL import Image, ImageTk  # Pillow installieren: pip install pillow
 from ITAZ_Inj_Eval_208 import run_main_analysis  # deine Hauptanalysefunktion
 import csv
 from types import SimpleNamespace
+from image_cache_manager import get_cache
 
 
 class TextRedirector:
@@ -440,7 +441,7 @@ class InjectionGUI(tk.Tk):
             filetypes=[("CSV-Dateien", "*.csv")]
         )
         if files:
-            pattern = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{4}_\d+_\d+_.*_(He|N2|CH4|H2)_\d+bar\.csv$")
+            pattern = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{4}_\d+_\d+_.*_(He|N2|CH4|H2)_\d+(?:\.\d+)?bar\.csv$")
             valid_files = []
             detected_gas = None
             gain_found = False
@@ -572,28 +573,29 @@ class InjectionGUI(tk.Tk):
             "Messsignale": 0,
         }
 
-        if not self.selected_files:
-            return
-
-        base_dir = os.path.dirname(self.selected_files[0])
-        png_files = []
-        for root, dirs, files in os.walk(base_dir):
-            for f in files:
-                if f.lower().endswith(".png"):
-                    png_files.append(os.path.join(root, f))
-
-        # Zuordnen nach Dateinamen
-        for path in png_files:
-            fname = os.path.basename(path)
-            current_keywords = ["Stromsignal", "Zero", "Boost", "Hold", "ICS"]
-            if any(keyword in fname for keyword in current_keywords):
-                self.image_tabs["Strom"].append(path)
-            elif "NeedleLift" in fname:
-                self.image_tabs["Nadelhub"].append(path)
-            elif "signals" in fname.lower():
-                self.image_tabs["Messsignale"].append(path)
-            else:
-                self.image_tabs["Ergebnisse"].append(path)
+        # Bilder aus dem Cache laden (im Memory)
+        cache = get_cache()
+        
+        # ICS-Bilder → "Strom" Tab
+        if "ICS" in cache:
+            self.image_tabs["Strom"] = [img for _, img in cache["ICS"]]
+        
+        # NeedleLift-Bilder → "Nadelhub" Tab
+        if "NeedleLift" in cache:
+            self.image_tabs["Nadelhub"] = [img for _, img in cache["NeedleLift"]]
+        
+        # Signals-Bilder → "Messsignale" Tab
+        if "Signals" in cache:
+            self.image_tabs["Messsignale"] = [img for _, img in cache["Signals"]]
+        
+        # Gain, RateDown, Shot2Shot → "Ergebnisse" Tab
+        self.image_tabs["Ergebnisse"] = []
+        if "Gain" in cache:
+            self.image_tabs["Ergebnisse"].extend([img for _, img in cache["Gain"]])
+        if "RateDown" in cache:
+            self.image_tabs["Ergebnisse"].extend([img for _, img in cache["RateDown"]])
+        if "Shot2Shot" in cache:
+            self.image_tabs["Ergebnisse"].extend([img for _, img in cache["Shot2Shot"]])
 
         # Nur die Bild-Tabs befüllen
         for tab_name in ["Messsignale", "Strom", "Nadelhub", "Ergebnisse"]:
@@ -621,19 +623,21 @@ class InjectionGUI(tk.Tk):
         self.show_image(tab_name, 0)
 
     def show_image(self, tab_name, step):
-        paths = self.image_tabs.get(tab_name, [])
-        if not paths:
+        images = self.image_tabs.get(tab_name, [])
+        if not images:
             self.frames[tab_name].img_label.config(text="Keine Bilder gefunden.", image="")
             return
 
         # Index aktualisieren
         if step != 0:
-            self.current_index[tab_name] = (self.current_index[tab_name] + step) % len(paths)
+            self.current_index[tab_name] = (self.current_index[tab_name] + step) % len(images)
 
-        img_path = paths[self.current_index[tab_name]]
+        img = images[self.current_index[tab_name]]
 
         try:
-            img = Image.open(img_path)
+            # img ist bereits eine PIL Image (aus Cache) oder ein Dateipfad
+            if isinstance(img, str):
+                img = Image.open(img)
         except Exception as e:
             self.frames[tab_name].img_label.config(text=f"Bild kann nicht geöffnet werden: {e}", image="")
             return

@@ -7,7 +7,7 @@ from types import SimpleNamespace
 
 
 def discover_input_files(files: List[str]) -> List[str]:
-    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{4}_\d+_\d+_.*_(He|N2|CH4|H2)_\d+bar\.csv$")
+    pattern = re.compile(r"^\d{4}-\d{2}-\d{2}-\d{4}_\d+_\d+_.*_(He|N2|CH4|H2)_\d+(?:\.\d+)?bar\.csv$")
     valid_files = []
     for path in files:
         fname = os.path.basename(path)

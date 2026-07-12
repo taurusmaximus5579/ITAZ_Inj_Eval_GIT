@@ -9,11 +9,13 @@ from analysis.injection_rate import InjectionRate
 from analysis.gain import GainCurve
 from analysis.rate_down import RateDownCurve
 from analysis.shot2shot import Eval_Shot2Shot
-from plotting import create_plots
+from plotting import create_plots, plot_signals_per_file
 from export import export_results
+from image_cache_manager import clear_cache as clear_image_cache
 
 
 def run_analysis_pipeline(cfg):
+    clear_image_cache()  # Neuer Cache für diese Analyse
     config = validate_config(cfg)
     selected_files = discover_input_files(config.selected_files)
     if not selected_files:
@@ -26,9 +28,7 @@ def run_analysis_pipeline(cfg):
     ordnerpfad = os.path.dirname(selected_files[0])
     ordnername = os.path.basename(ordnerpfad)
     result_folder = os.path.join(ordnerpfad, "Results")
-    bilder_folder = os.path.join(ordnerpfad, "Bilder")
     os.makedirs(result_folder, exist_ok=True)
-    os.makedirs(bilder_folder, exist_ok=True)
 
     if config.shot_log is None:
         shot_log_path = os.path.join(ordnerpfad, "shot_log.csv")
@@ -53,7 +53,10 @@ def run_analysis_pipeline(cfg):
     signal_dict["Injection Rate (mg_ms)"] = inj_rate_eval["injrate_values"]
     signal_dict["Mass (mg)"] = inj_rate_eval["cumulative_mass_values"]
 
-    create_plots(signal_dict, T, result_folder, bilder_folder, rawdata_by_file=rawdata_by_file, raw_data_plot=config.plot_raw_data)
+    create_plots(signal_dict, T, result_folder, rawdata_by_file=rawdata_by_file, raw_data_plot=config.plot_raw_data)
+    
+    # Generate individual signal plots per file and cache them
+    plot_signals_per_file(signal_dict, T, result_folder)
 
     mass_info = None
     all_stats = None

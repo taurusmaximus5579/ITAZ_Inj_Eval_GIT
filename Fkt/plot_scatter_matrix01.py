@@ -5,8 +5,8 @@ und Scatter+Regression für signifikante Paare.
 Alle signifikanten Korrelationen werden im Balkendiagramm geplottet.
 """
 
-def plot_scatter_matrix(df, out_path, figsize=(14, 14), alpha=0.25,
-                        r_threshold=0.3, p_threshold=0.05):
+def plot_scatter_matrix(df, out_path=None, figsize=(14, 14), alpha=0.25,
+                        r_threshold=0.3, p_threshold=0.05, image_cache=None):
 
     import matplotlib.pyplot as plt
     import numpy as np
@@ -84,8 +84,14 @@ def plot_scatter_matrix(df, out_path, figsize=(14, 14), alpha=0.25,
     ax_corr.grid(axis="x", linestyle="--", alpha=0.5)
 
     plt.tight_layout()
-    fig_corr.savefig(out_path + "_significant.png", dpi=150, bbox_inches="tight")
-    plt.close(fig_corr)
+    if image_cache is not None:
+        from image_utils import persist_or_cache_figure
+        persist_or_cache_figure(fig_corr, image_cache=image_cache, category="Shot2Shot", name="Correlations", save_to_disk=False)
+    elif out_path:
+        fig_corr.savefig(out_path + "_significant.png", dpi=150, bbox_inches="tight")
+        plt.close(fig_corr)
+    else:
+        plt.close(fig_corr)
 
     # ---------------------------------------------------------
     # 1) Relevante Variablen bestimmen
@@ -159,5 +165,11 @@ def plot_scatter_matrix(df, out_path, figsize=(14, 14), alpha=0.25,
         axes[i, 0].set_ylabel(name, rotation=45, labelpad=60)
         axes[i, 0].yaxis.set_label_position("left")
 
-    fig.savefig(out_path, dpi=150, bbox_inches="tight")
-    plt.close(fig)
+    if image_cache is not None:
+        from image_utils import persist_or_cache_figure
+        persist_or_cache_figure(fig, image_cache=image_cache, category="Shot2Shot", name="ScatterMatrix", save_to_disk=False)
+    elif out_path:
+        fig.savefig(out_path, dpi=150, bbox_inches="tight")
+        plt.close(fig)
+    else:
+        plt.close(fig)

@@ -2,6 +2,8 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from image_cache_manager import get_cache
+from image_utils import persist_or_cache_figure
 
 
 def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=None,
@@ -95,8 +97,7 @@ def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=
     regression_info = {"Typ": regression_type, "Koeffizienten": coeffs, "R²": r2}
 
     ordnername = os.path.basename(os.path.normpath(ordnerpfad)) if ordnerpfad else "Unbekannter_Ordner"
-    bilder_pfad = os.path.join(ordnerpfad if ordnerpfad else ".", "Bilder")
-    os.makedirs(bilder_pfad, exist_ok=True)
+    # Bilder werden nur im Memory gehalten
     results_pfad = os.path.join(ordnerpfad if ordnerpfad else ".", "Results")
     os.makedirs(results_pfad, exist_ok=True)
 
@@ -122,9 +123,7 @@ def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=
     ax2.legend(loc='upper right')
 
     plt.tight_layout()
-    png_path = os.path.join(bilder_pfad, "GainCurve.png")
-    plt.savefig(png_path)
-    plt.close()
+    persist_or_cache_figure(fig, image_cache=get_cache(), category="Gain", name="GainCurve", save_to_disk=False)
 
     fig_html = go.Figure()
     fig_html.add_trace(go.Scatter(x=x, y=y, mode='markers', name='Mass (mg)', marker=dict(color='blue')))
@@ -143,5 +142,5 @@ def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=
     html_path = os.path.join(results_pfad, "GainCurve_with_NeedleLift.html")
     fig_html.write_html(html_path)
 
-    print(f"Plots gespeichert unter:\nPNG: {png_path}\nHTML: {html_path}")
+    print(f"✅ Interactive plot saved: {html_path}")
     return mass_info, regression_info
