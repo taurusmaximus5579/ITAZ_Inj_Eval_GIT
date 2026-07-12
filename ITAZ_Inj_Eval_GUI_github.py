@@ -25,6 +25,7 @@ XX.XX.2025 Lars Köhler
 [✅] In der Gainauswertung Nadelhubintegral
 [✅] Optimierung InjRate03 -> Rate und Masse nur solange Nadel offen ist -> Entfernen von Rauschen in der Massenauswertung
 [ ] Entpivotisiertes Diagramm für Statistikauswertung
+[ ] Auswahlfeld zur Bilder generieren
 """
 
 import tkinter as tk
