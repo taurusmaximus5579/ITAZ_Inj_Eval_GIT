@@ -2,11 +2,10 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
-from image_utils import persist_or_cache_figure
 
 
 def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
-                  regression_type="linear", auto_select=False, image_cache=None, save_to_disk=False):
+                  regression_type="linear", auto_select=False):
     try:
         mass_dict = signal_dict["Mass (mg)"]
     except KeyError:
@@ -135,7 +134,7 @@ def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
     plt.text(x.max() * 0.95, y.min() + 0.5 * (y.max() - y.min()), f"{equation}\nR² = {r2:.4f}", fontsize=14, ha='right', va='center', bbox=dict(facecolor='white', edgecolor='gray'))
     plt.tight_layout()
     png_path = os.path.join(bilder_pfad, "RateDownCurve.png")
-    persist_or_cache_figure(plt.gcf(), output_path=png_path if save_to_disk else None, image_cache=image_cache, category="Ergebnisse", name="RateDownCurve", save_to_disk=save_to_disk, dpi=150)
+    plt.savefig(png_path)
     plt.close()
 
     fig = go.Figure()

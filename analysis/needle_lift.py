@@ -3,10 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import savgol_filter
 from scipy.integrate import cumulative_trapezoid
-from image_utils import persist_or_cache_figure
 
 
-def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None, image_cache=None, save_to_disk=False):
+def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None):
     bilder_pfad = os.path.join(ordnerpfad, "Bilder") if ordnerpfad else os.path.join(".", "Bilder")
     os.makedirs(bilder_pfad, exist_ok=True)
 
@@ -85,7 +84,7 @@ def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None, image_cache=N
     plt.grid(True)
     plt.tight_layout()
     overview_path = os.path.join(bilder_pfad, "NeedleLift_Overview.png")
-    persist_or_cache_figure(plt.gcf(), output_path=overview_path if save_to_disk else None, image_cache=image_cache, category="Nadelhub", name="NeedleLift_Overview", save_to_disk=save_to_disk, dpi=150)
+    plt.savefig(overview_path)
     print(f"✅ Übersicht gespeichert: {overview_path}")
     plt.close()
 
@@ -106,7 +105,7 @@ def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None, image_cache=N
             plt.legend()
             plt.tight_layout()
             single_path = os.path.join(bilder_pfad, f"NeedleLift_{name}.png")
-            persist_or_cache_figure(plt.gcf(), output_path=single_path if save_to_disk else None, image_cache=image_cache, category="Nadelhub", name=f"NeedleLift_{name}", save_to_disk=save_to_disk, dpi=150)
+            plt.savefig(single_path)
             print(f"✅ Einzelplot gespeichert: {single_path}")
             plt.close()
 
@@ -131,7 +130,7 @@ def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None, image_cache=N
 
         plt.tight_layout()
         hist_path = os.path.join(bilder_pfad, "NeedleLift_Histogram.png")
-        persist_or_cache_figure(plt.gcf(), output_path=hist_path if save_to_disk else None, image_cache=image_cache, category="Ergebnisse", name="NeedleLift_Histogram", save_to_disk=save_to_disk, dpi=150)
+        plt.savefig(hist_path)
         print(f"✅ Histogramm gespeichert: {hist_path}")
         plt.close()
     else:

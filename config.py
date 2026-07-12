@@ -11,7 +11,6 @@ class AnalysisConfig:
     eval_gain: bool = False
     eval_rate_dn: bool = False
     shot2shot: bool = False
-    store_images_on_disk: bool = False
 
     gas: str = "Helium"
     cv: float = 3115.0
@@ -55,7 +54,6 @@ class AnalysisConfig:
             "eval_gain": self.eval_gain,
             "eval_rate_dn": self.eval_rate_dn,
             "shot2shot": self.shot2shot,
-            "store_images_on_disk": self.store_images_on_disk,
             "selected_files": self.selected_files,
             "pressure_sensor": self.pressure_sensor,
             "pressure_factor": self.pressure_factor,
@@ -76,7 +74,6 @@ def validate_config(cfg: Dict[str, Any]) -> AnalysisConfig:
     config.eval_gain = bool(cfg.get("eval_gain", False))
     config.eval_rate_dn = bool(cfg.get("eval_rate_dn", False))
     config.shot2shot = bool(cfg.get("shot2shot", False))
-    config.store_images_on_disk = bool(cfg.get("store_images_on_disk", False))
 
     config.gas = cfg.get("gas", "Helium")
     config.cv = float(cfg.get("cv", 3115.0))
