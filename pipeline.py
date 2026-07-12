@@ -22,6 +22,7 @@ def run_analysis_pipeline(cfg):
 
     rawdata_by_file = load_measurement_files(selected_files)
     signal_dict, t_common = build_signal_dict(rawdata_by_file, config)
+    image_cache = {}
 
     ordnerpfad = os.path.dirname(selected_files[0])
     ordnername = os.path.basename(ordnerpfad)
@@ -44,25 +45,67 @@ def run_analysis_pipeline(cfg):
         col="Injector Control Signal (A)",
         T=T,
         ordnerpfad=ordnerpfad,
+        image_cache=image_cache,
+        save_to_disk=config.store_images_on_disk,
     )
 
-    integrated_lift, hub_times = analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad)
+    integrated_lift, hub_times = analyze_and_plot_needle_lifts(
+        signal_dict,
+        T,
+        ordnerpfad,
+        image_cache=image_cache,
+        save_to_disk=config.store_images_on_disk,
+    )
     signal_dict['Needle Lift Integrated (mm_s)'] = integrated_lift
 
     inj_rate_eval = InjectionRate(config.cv, config.cp, config.R, config.Temp, signal_dict, T, config.A, hub_times)
     signal_dict["Injection Rate (mg_ms)"] = inj_rate_eval["injrate_values"]
     signal_dict["Mass (mg)"] = inj_rate_eval["cumulative_mass_values"]
 
-    create_plots(signal_dict, T, result_folder, bilder_folder, raw_data_plot=config.plot_raw_data)
+    create_plots(
+        signal_dict,
+        T,
+        result_folder,
+        bilder_folder,
+        raw_data_plot=config.plot_raw_data,
+        image_cache=image_cache,
+        save_to_disk=config.store_images_on_disk,
+    )
 
     mass_info = None
     all_stats = None
     if config.eval_gain:
-        mass_info = GainCurve(signal_dict, T, config.step_size, ics_result, hub_times, ordnerpfad)
+        mass_info = GainCurve(
+            signal_dict,
+            T,
+            config.step_size,
+            ics_result,
+            hub_times,
+            ordnerpfad,
+            image_cache=image_cache,
+            save_to_disk=config.store_images_on_disk,
+        )
     if config.eval_rate_dn:
-        mass_info = RateDownCurve(signal_dict, T, config.step_size, hub_times, ordnerpfad)
+        mass_info = RateDownCurve(
+            signal_dict,
+            T,
+            config.step_size,
+            hub_times,
+            ordnerpfad,
+            image_cache=image_cache,
+            save_to_disk=config.store_images_on_disk,
+        )
     if config.shot2shot:
-        all_stats = Eval_Shot2Shot(signal_dict, T, config.step_size, ics_result, hub_times, ordnerpfad)
+        all_stats = Eval_Shot2Shot(
+            signal_dict,
+            T,
+            config.step_size,
+            ics_result,
+            hub_times,
+            ordnerpfad,
+            image_cache=image_cache,
+            save_to_disk=config.store_images_on_disk,
+        )
 
     if config.export_excel:
         export_results(
@@ -79,4 +122,4 @@ def run_analysis_pipeline(cfg):
             all_stats=all_stats,
         )
 
-    return signal_dict
+    return {"signal_dict": signal_dict, "image_cache": image_cache}

@@ -2,10 +2,11 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+from image_utils import persist_or_cache_figure
 
 
 def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=None,
-              regression_type="linear", auto_select=False):
+              regression_type="linear", auto_select=False, image_cache=None, save_to_disk=False):
     try:
         mass_dict = signal_dict["Mass (mg)"]
     except KeyError:
@@ -123,7 +124,7 @@ def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=
 
     plt.tight_layout()
     png_path = os.path.join(bilder_pfad, "GainCurve.png")
-    plt.savefig(png_path)
+    persist_or_cache_figure(plt.gcf(), output_path=png_path if save_to_disk else None, image_cache=image_cache, category="Ergebnisse", name="GainCurve", save_to_disk=save_to_disk, dpi=150)
     plt.close()
 
     fig_html = go.Figure()

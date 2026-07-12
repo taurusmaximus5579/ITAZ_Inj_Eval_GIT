@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 from Fkt.Fig01 import plot_signals
 from Fkt.FigDict02 import plot_grouped_signals_with_time
 from Fkt.Intpol02 import interpolate_nested_signal_dict
+from image_utils import persist_or_cache_figure
 
 
-def plot_signals_per_file(signal_dict, t_common, output_folder):
+def plot_signals_per_file(signal_dict, t_common, output_folder, image_cache=None, save_to_disk=False):
     selected_keys = [
         'Needle Lift (mm)',
         'System Pressure (abs_bar)',
@@ -52,14 +53,21 @@ def plot_signals_per_file(signal_dict, t_common, output_folder):
 
         plt.tight_layout()
         img_path = os.path.join(output_folder, f"{fname}_signals.png")
-        plt.savefig(img_path, dpi=300)
-        plt.close()
+        persist_or_cache_figure(
+            fig,
+            output_path=img_path if save_to_disk else None,
+            image_cache=image_cache,
+            category="Messsignale",
+            name=fname,
+            save_to_disk=save_to_disk,
+            dpi=300,
+        )
 
 
-def create_plots(signal_dict, T, result_folder, bilder_folder, raw_data_plot=False):
+def create_plots(signal_dict, T, result_folder, bilder_folder, raw_data_plot=False, image_cache=None, save_to_disk=False):
     plot_path = plot_grouped_signals_with_time(signal_dict, T, result_folder)
-    print(f"📊 Diagramm gespeichert unter: {plot_path}")
-    plot_signals_per_file(signal_dict, T, bilder_folder)
+    print(f"📊 Diagramm erstellt für die GUI und die Ergebnisdarstellung")
+    plot_signals_per_file(signal_dict, T, bilder_folder, image_cache=image_cache, save_to_disk=save_to_disk)
 
     if raw_data_plot:
         for filename, data in signal_dict.get('Needle Lift (mm)', {}).items():

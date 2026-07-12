@@ -64,6 +64,7 @@ class InjectionGUI(tk.Tk):
         self.selected_files = []
         self.shot_log = None  # Struct (SimpleNamespace) aus shot_log.csv
         self.image_tabs = {"Messsignale": [], "Strom": [], "Nadelhub": [], "Ergebnisse": []}
+        self.image_cache = {}
         self.frames = {}
 
         self._build_ui()
@@ -219,12 +220,14 @@ class InjectionGUI(tk.Tk):
         opts.pack(fill="x", padx=10, pady=8)
         self.plot_raw_data = tk.BooleanVar(value=False)
         self.export_excel = tk.BooleanVar(value=True)
+        self.store_images_on_disk = tk.BooleanVar(value=False)
         self.eval_gain = tk.BooleanVar(value=False)
         self.eval_rate_dn = tk.BooleanVar(value=False)
         self.shot2shot = tk.BooleanVar(value=False)  # ✅ NEU: Shot2Shot Checkbox
         
         ttk.Checkbutton(opts, text="Rohdaten plotten", variable=self.plot_raw_data).pack(side="left", padx=6)
         ttk.Checkbutton(opts, text="Excel exportieren", variable=self.export_excel).pack(side="left", padx=6)
+        ttk.Checkbutton(opts, text="Bilder auf Festplatte speichern", variable=self.store_images_on_disk).pack(side="left", padx=6)
         ttk.Checkbutton(opts, text="Gain-Kurve auswerten", variable=self.eval_gain).pack(side="left", padx=6)
         ttk.Checkbutton(opts, text="Rate-Down-Kurve auswerten", variable=self.eval_rate_dn).pack(side="left", padx=6)
         ttk.Checkbutton(opts, text="Shot2Shot", variable=self.shot2shot).pack(side="left", padx=6)  # ✅ NEU
@@ -311,6 +314,7 @@ class InjectionGUI(tk.Tk):
             "zero_max": float(self.zero_max.get()),
             "plot_raw_data": self.plot_raw_data.get(),
             "export_excel": self.export_excel.get(),
+            "store_images_on_disk": self.store_images_on_disk.get(),
             "eval_gain": self.eval_gain.get(),
             "eval_rate_dn": self.eval_rate_dn.get(),
             "shot2shot": self.shot2shot.get(),  # ✅ NEU: Wert in Konfiguration übernehmen
@@ -539,7 +543,9 @@ class InjectionGUI(tk.Tk):
             self.update_idletasks()
 
             # Hauptanalyse
-            run_main_analysis(cfg)
+            analysis_result = run_main_analysis(cfg)
+            if isinstance(analysis_result, dict):
+                self.image_cache = analysis_result.get("image_cache", {})
 
             self.progress.configure(value=100)
             self.log_msg("✅ Analyse beendet.")
@@ -574,25 +580,37 @@ class InjectionGUI(tk.Tk):
         if not self.selected_files:
             return
 
-        base_dir = os.path.dirname(self.selected_files[0])
-        png_files = []
-        for root, dirs, files in os.walk(base_dir):
-            for f in files:
-                if f.lower().endswith(".png"):
-                    png_files.append(os.path.join(root, f))
+        if self.image_cache:
+            category_map = {
+                "Messsignale": "Messsignale",
+                "Strom": "Strom",
+                "Nadelhub": "Nadelhub",
+                "Ergebnisse": "Ergebnisse",
+            }
+            for category, entries in self.image_cache.items():
+                tab_name = category_map.get(category, "Ergebnisse")
+                for name, image in entries:
+                    self.image_tabs[tab_name].append((name, image))
+        else:
+            base_dir = os.path.dirname(self.selected_files[0])
+            png_files = []
+            for root, dirs, files in os.walk(base_dir):
+                for f in files:
+                    if f.lower().endswith(".png"):
+                        png_files.append(os.path.join(root, f))
 
-        # Zuordnen nach Dateinamen
-        for path in png_files:
-            fname = os.path.basename(path)
-            current_keywords = ["Stromsignal", "Zero", "Boost", "Hold", "ICS"]
-            if any(keyword in fname for keyword in current_keywords):
-                self.image_tabs["Strom"].append(path)
-            elif "NeedleLift" in fname:
-                self.image_tabs["Nadelhub"].append(path)
-            elif "signals" in fname.lower():
-                self.image_tabs["Messsignale"].append(path)
-            else:
-                self.image_tabs["Ergebnisse"].append(path)
+            # Zuordnen nach Dateinamen
+            for path in png_files:
+                fname = os.path.basename(path)
+                current_keywords = ["Stromsignal", "Zero", "Boost", "Hold", "ICS"]
+                if any(keyword in fname for keyword in current_keywords):
+                    self.image_tabs["Strom"].append(path)
+                elif "NeedleLift" in fname:
+                    self.image_tabs["Nadelhub"].append(path)
+                elif "signals" in fname.lower():
+                    self.image_tabs["Messsignale"].append(path)
+                else:
+                    self.image_tabs["Ergebnisse"].append(path)
 
         # Nur die Bild-Tabs befüllen
         for tab_name in ["Messsignale", "Strom", "Nadelhub", "Ergebnisse"]:
@@ -629,10 +647,14 @@ class InjectionGUI(tk.Tk):
         if step != 0:
             self.current_index[tab_name] = (self.current_index[tab_name] + step) % len(paths)
 
-        img_path = paths[self.current_index[tab_name]]
+        item = paths[self.current_index[tab_name]]
 
         try:
-            img = Image.open(img_path)
+            if isinstance(item, tuple):
+                _, img = item
+                img = img.copy()
+            else:
+                img = Image.open(item)
         except Exception as e:
             self.frames[tab_name].img_label.config(text=f"Bild kann nicht geöffnet werden: {e}", image="")
             return

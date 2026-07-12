@@ -2,11 +2,12 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from image_utils import persist_or_cache_figure
 
 
 def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
                      col="Injector Control Signal (A)", window=20, stability=1,
-                     T=None, ordnerpfad=None):
+                     T=None, ordnerpfad=None, image_cache=None, save_to_disk=False):
     if signal_dict is None or not isinstance(signal_dict, dict):
         raise ValueError("Fehler: signal_dict ist None oder kein Dictionary.")
     if col not in signal_dict:
@@ -92,7 +93,7 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
 
         plt.legend(fontsize=8, loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2)
         einzel_plot_path = os.path.join(bilder_pfad, f"{key}_Stromsignal.png")
-        plt.savefig(einzel_plot_path)
+        persist_or_cache_figure(plt.gcf(), output_path=einzel_plot_path if save_to_disk else None, image_cache=image_cache, category="Strom", name=f"{key}_Stromsignal", save_to_disk=save_to_disk, dpi=150)
         plt.close()
 
     for val in boost_medians:
@@ -111,7 +112,7 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
     plt.ylabel("Injector Control Signal (A)")
     plt.grid(True)
     main_plot_path = os.path.join(bilder_pfad, "Stromsignale.png")
-    plt.savefig(main_plot_path)
+    persist_or_cache_figure(plt.gcf(), output_path=main_plot_path if save_to_disk else None, image_cache=image_cache, category="Strom", name="Stromsignale", save_to_disk=save_to_disk, dpi=150)
     plt.close()
 
     def plot_median_histogram(data, title, color, filename):
@@ -130,7 +131,7 @@ def analyze_plateaus(signal_dict, boost_range, hold_range, zero_range,
         plt.legend().set_visible(False)
         plt.tight_layout()
         hist_path = os.path.join(bilder_pfad, filename)
-        plt.savefig(hist_path)
+        persist_or_cache_figure(plt.gcf(), output_path=hist_path if save_to_disk else None, image_cache=image_cache, category="Ergebnisse", name=filename, save_to_disk=save_to_disk, dpi=150)
         plt.close()
 
     plot_median_histogram(boost_medians, "Boost Current Histogram", "red", "Boost_Histogram.png")

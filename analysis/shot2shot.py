@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 
 from Fkt.build_shot_stats01 import build_shot_stats
 from Fkt.plot_scatter_matrix01 import plot_scatter_matrix
+from image_utils import persist_or_cache_figure
 
 
 def stats_with_percent(arr):
@@ -34,7 +35,7 @@ def stats_with_percent(arr):
 
 
 def Eval_Shot2Shot(signal_dict, T, min_time_step, ICS_Eval_Result, hub_times, ordnerpfad,
-                   use_subplots=True):
+                   use_subplots=True, image_cache=None, save_to_disk=False):
     os.makedirs(ordnerpfad, exist_ok=True)
     bilder_pfad = os.path.join(ordnerpfad, "Bilder")
     os.makedirs(bilder_pfad, exist_ok=True)
@@ -73,7 +74,7 @@ def Eval_Shot2Shot(signal_dict, T, min_time_step, ICS_Eval_Result, hub_times, or
 
     axes[-1].set_xlabel("Zeit [s]")
     fig.tight_layout()
-    fig.savefig(os.path.join(bilder_pfad, "Shot2Shot_Signale.png"), dpi=150)
+    persist_or_cache_figure(fig, output_path=os.path.join(bilder_pfad, "Shot2Shot_Signale.png") if save_to_disk else None, image_cache=image_cache, category="Ergebnisse", name="Shot2Shot_Signale", save_to_disk=save_to_disk, dpi=150)
     plt.close(fig)
 
     for sig_name in signal_names:
@@ -272,7 +273,7 @@ def Eval_Shot2Shot(signal_dict, T, min_time_step, ICS_Eval_Result, hub_times, or
             fig.subplots_adjust(bottom=0.55)
 
         dateiname = f"{sig_name}.png"
-        fig.savefig(os.path.join(bilder_pfad, dateiname), dpi=150)
+        persist_or_cache_figure(fig, output_path=os.path.join(bilder_pfad, dateiname) if save_to_disk else None, image_cache=image_cache, category="Ergebnisse", name=dateiname, save_to_disk=save_to_disk, dpi=150)
         plt.close(fig)
 
     df_stats = build_shot_stats(signal_dict, T, hub_times, ICS_Eval_Result)
