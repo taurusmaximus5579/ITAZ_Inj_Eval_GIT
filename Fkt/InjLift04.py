@@ -1,0 +1,153 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sum Nov 23  2025
+
+@author: larsk
+[✅] Bilder erstellt
+"""
+
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.signal import savgol_filter
+from scipy.integrate import cumulative_trapezoid
+import os
+
+def analyze_and_plot_needle_lifts(signal_dict, T, ordnerpfad=None):
+    # Unterordner "Bilder" erstellen
+    bilder_pfad = os.path.join(ordnerpfad, "Bilder") if ordnerpfad else os.path.join(".", "Bilder")
+    os.makedirs(bilder_pfad, exist_ok=True)
+
+    T = np.asarray(T)
+    dt = np.diff(T)
+    needle_lifts = signal_dict.get("Needle Lift (mm)", {})
+    integrated_results = {}
+    hub_times = {}
+
+    # Parameter für Glättung und Offset
+    window_size = 501
+    polyorder = 3
+    offset_time = 0.001
+    threshold = 0.003
+
+    for name, data in needle_lifts.items():
+        data = np.asarray(data)
+
+        if data.shape[0] != T.shape[0]:
+            print(f"⚠️ Länge stimmt nicht überein bei {name}: {data.shape[0]} vs {T.shape[0]}")
+            continue
+
+        # Glätten
+        smoothed = savgol_filter(data, window_size, polyorder)
+
+        # Offsetkorrektur
+        offset_idx = np.searchsorted(T, offset_time)
+        offset = np.mean(smoothed[:offset_idx])
+        corrected = smoothed - offset
+
+        # Start- und Endzeit finden
+        mask = T >= offset_time
+        above = np.where((corrected > threshold) & mask)[0]
+        if len(above) == 0:
+            start_idx = end_idx = None
+            start_time = end_time = None
+        else:
+            start_idx = above[0]
+            end_idx = above[-1]
+            start_time = T[start_idx]
+            end_time = T[end_idx]
+
+            # Endzeit verfeinern
+            fall_threshold = threshold
+            for i in range(start_idx, len(corrected)):
+                if corrected[i] < fall_threshold:
+                    end_idx = i
+                    end_time = T[end_idx]
+                    break
+
+        # Integration
+        integrated_lift = cumulative_trapezoid(data, dx=dt, initial=0)
+
+        integrated_results[name] = integrated_lift
+        hub_times[name] = {
+            "start_index": start_idx,
+            "start_time": start_time,
+            "end_index": end_idx,
+            "end_time": end_time
+        }
+
+    # --- Gesamtübersicht ---
+    plt.figure(figsize=(10, 6))
+    for name, data in needle_lifts.items():
+        if len(data) == len(T):
+            smoothed = savgol_filter(data, window_size, polyorder)
+            plt.plot(T, smoothed, label=f"Geglättet - {name}", linestyle='--')
+
+            if hub_times[name]["start_time"] is not None:
+                plt.axvline(hub_times[name]["start_time"], color='green', linestyle='--', linewidth=1)
+            if hub_times[name]["end_time"] is not None:
+                plt.axvline(hub_times[name]["end_time"], color='red', linestyle='--', linewidth=1)
+
+    plt.title("Needle Lift Measurements – Gesamtübersicht")
+    plt.xlabel("Time (s)")
+    plt.ylabel("Needle Lift (mm)")
+    plt.grid(True)
+    plt.tight_layout()
+    overview_path = os.path.join(bilder_pfad, "NeedleLift_Overview.png")
+    plt.savefig(overview_path)
+    print(f"✅ Übersicht gespeichert: {overview_path}")
+    plt.close()
+
+    # --- Einzelplots ---
+    for name, data in needle_lifts.items():
+        if len(data) == len(T):
+            smoothed = savgol_filter(data, window_size, polyorder)
+            plt.figure(figsize=(8, 5))
+            plt.plot(T, data, label=f"Original - {name}", color='grey')
+            plt.plot(T, smoothed, label=f"Geglättet - {name}", linestyle='--', color='blue')
+
+            if hub_times[name]["start_time"] is not None:
+                plt.axvline(hub_times[name]["start_time"], color='green', linestyle='--', linewidth=1)
+            if hub_times[name]["end_time"] is not None:
+                plt.axvline(hub_times[name]["end_time"], color='red', linestyle='--', linewidth=1)
+
+            plt.title(f"Needle Lift – {name}")
+            plt.xlabel("Time (s)")
+            plt.ylabel("Needle Lift (mm)")
+            plt.grid(True)
+            plt.legend()
+            plt.tight_layout()
+            single_path = os.path.join(bilder_pfad, f"NeedleLift_{name}.png")
+            plt.savefig(single_path)
+            print(f"✅ Einzelplot gespeichert: {single_path}")
+            plt.close()
+
+    # --- Histogramme ---
+    start_times = [v['start_time'] for v in hub_times.values() if v['start_time'] is not None]
+    end_times = [v['end_time'] for v in hub_times.values() if v['end_time'] is not None]
+
+    if start_times and end_times:
+        all_times = np.array(start_times + end_times)
+        bins = np.histogram_bin_edges(all_times, bins=len(all_times))
+
+        fig, axes = plt.subplots(2, 1, figsize=(10, 8), sharex=True)
+        axes[0].hist(start_times, bins=bins, color='skyblue', edgecolor='black')
+        axes[0].set_title('Histogram of the start times of the Needle Lifts')
+        axes[0].set_ylabel('Number of measurements')
+        axes[0].grid(True)
+
+        axes[1].hist(end_times, bins=bins, color='salmon', edgecolor='black')
+        axes[1].set_title('Histogram of the end times of the Needle Lifts')
+        axes[1].set_xlabel('Time (s)')
+        axes[1].set_ylabel('Number of measurements')
+        axes[1].grid(True)
+
+        plt.tight_layout()
+        hist_path = os.path.join(bilder_pfad, "NeedleLift_Histogram.png")
+        plt.savefig(hist_path)
+        print(f"✅ Histogramm gespeichert: {hist_path}")
+        plt.close()
+    else:
+        print("⚠️ Nicht genügend gültige Start- oder Endzeiten für Histogramm.")
+
+    print(f"\n✅ Alle Diagramme gespeichert unter: {bilder_pfad}")
+    return integrated_results, hub_times
