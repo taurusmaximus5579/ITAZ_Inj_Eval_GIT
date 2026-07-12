@@ -11,7 +11,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-def plot_grouped_signals_with_time(signal_dict, T, foldername):
+def plot_grouped_signals_with_time(signal_dict, T, foldername, rawdata_by_file=None):
     os.makedirs(foldername, exist_ok=True)
     output_file = os.path.join(foldername, os.path.basename(foldername) + '_SigPlot.html')
 

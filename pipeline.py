@@ -53,7 +53,7 @@ def run_analysis_pipeline(cfg):
     signal_dict["Injection Rate (mg_ms)"] = inj_rate_eval["injrate_values"]
     signal_dict["Mass (mg)"] = inj_rate_eval["cumulative_mass_values"]
 
-    create_plots(signal_dict, T, result_folder, bilder_folder, raw_data_plot=config.plot_raw_data)
+    create_plots(signal_dict, T, result_folder, bilder_folder, rawdata_by_file=rawdata_by_file, raw_data_plot=config.plot_raw_data)
 
     mass_info = None
     all_stats = None
@@ -72,6 +72,7 @@ def run_analysis_pipeline(cfg):
             hub_times,
             result_folder,
             ordnername,
+            T=T,
             evaluate_gain_curve=config.eval_gain,
             evaluate_rate_down=config.eval_rate_dn,
             evaluate_shot2shot=config.shot2shot,

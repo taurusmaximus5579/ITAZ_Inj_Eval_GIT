@@ -1,4 +1,6 @@
 import os
+import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from Fkt.Fig01 import plot_signals
 from Fkt.FigDict02 import plot_grouped_signals_with_time
@@ -56,15 +58,36 @@ def plot_signals_per_file(signal_dict, t_common, output_folder):
         plt.close()
 
 
-def create_plots(signal_dict, T, result_folder, bilder_folder, raw_data_plot=False):
-    plot_path = plot_grouped_signals_with_time(signal_dict, T, result_folder)
+def create_plots(signal_dict, T, result_folder, bilder_folder, rawdata_by_file=None, raw_data_plot=False):
+    plot_path = plot_grouped_signals_with_time(signal_dict, T, result_folder, rawdata_by_file=rawdata_by_file)
     print(f"📊 Diagramm gespeichert unter: {plot_path}")
     plot_signals_per_file(signal_dict, T, bilder_folder)
 
-    if raw_data_plot:
-        for filename, data in signal_dict.get('Needle Lift (mm)', {}).items():
-            html_filename = os.path.join(result_folder, f"{filename}_rawdata.html")
-            plot_signals(data, filename, html_filename, FigTyp=1)
+    if raw_data_plot and rawdata_by_file:
+        # Erstelle DataFrames mit allen Signalen pro Datei (raw + processed)
+        if signal_dict and 'Needle Lift (mm)' in signal_dict:
+            for filename in signal_dict['Needle Lift (mm)'].keys():
+                data_for_file = pd.DataFrame({'Time (s)': T})
+                
+                # Processed signals (umgerechnet)
+                for signal_name, signals_by_file in signal_dict.items():
+                    if filename in signals_by_file:
+                        data_for_file[f"{signal_name} (processed)"] = signals_by_file[filename]
+                
+                # Raw signals (direkt aus CSV, keine Umrechnung)
+                if filename in rawdata_by_file:
+                    raw_data = rawdata_by_file[filename]
+                    # Interpoliere raw data auf die gleiche Zeitachse wie processed data
+                    T_raw = raw_data['T'] - raw_data['T'].iloc[0]
+                    
+                    data_for_file['Nadelhub [raw]'] = np.interp(T, T_raw, raw_data['Nadelhub'])
+                    data_for_file['Systemdruck [raw]'] = np.interp(T, T_raw, raw_data['Systemdruck'])
+                    data_for_file['Rate [raw]'] = np.interp(T, T_raw, raw_data['Rate'])
+                    data_for_file['Steuersignal [raw]'] = np.interp(T, T_raw, raw_data['Steuersignal'])
+                
+                html_filename = f"{filename}_rawdata.html"
+                from Fkt.Fig01 import plot_signals
+                plot_signals(data_for_file, result_folder, html_filename, FigTyp=1)
 
 
 def interpolate_signal_data(signal_dict, T, step_size):

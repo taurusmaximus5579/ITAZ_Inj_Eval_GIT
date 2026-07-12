@@ -27,7 +27,7 @@ def RateDownCurve(signal_dict, T, step_size, hub_times, ordnerpfad=None,
             mass_info[name] = {"mass": None, "pressure": None}
             continue
 
-        end_index = int(end_time / step_size)
+        end_index = int(np.searchsorted(T, end_time))
         if end_index >= len(data):
             mass_info[name] = {"mass": None, "pressure": np.mean(pressure_data)}
         else:

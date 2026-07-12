@@ -24,7 +24,7 @@ def GainCurve(signal_dict, T, step_size, ICS_Eval_Result, hub_times, ordnerpfad=
             mass_info[name] = {"mass": None, "ICS_ON": None, "NeedleLiftIntegrated": None}
             continue
 
-        end_index = int(end_time / step_size)
+        end_index = int(np.searchsorted(T, end_time))
         if end_index >= len(data):
             mass_info[name] = {"mass": None, "ICS_ON": ics_on_value, "NeedleLiftIntegrated": None}
         else:

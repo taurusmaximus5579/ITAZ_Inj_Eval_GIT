@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 
-def export_results(signal_dict, config, ics_result, hub_times, result_folder, ordnername, evaluate_gain_curve=False, evaluate_rate_down=False, evaluate_shot2shot=False, mass_info=None, all_stats=None):
+def export_results(signal_dict, config, ics_result, hub_times, result_folder, ordnername, T=None, evaluate_gain_curve=False, evaluate_rate_down=False, evaluate_shot2shot=False, mass_info=None, all_stats=None):
     output_file = os.path.join(result_folder, f"{ordnername}.xlsx")
     with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
         interpolated_signals = signal_dict
@@ -16,6 +16,8 @@ def export_results(signal_dict, config, ics_result, hub_times, result_folder, or
         for sheet_name in tab_order:
             if sheet_name in interpolated_signals:
                 df = pd.DataFrame(interpolated_signals[sheet_name])
+                if T is not None:
+                    df.insert(0, 'Time (s)', T)
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
 
         if evaluate_gain_curve and isinstance(mass_info, tuple) and isinstance(mass_info[0], dict):
