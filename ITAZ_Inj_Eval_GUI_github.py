@@ -26,6 +26,7 @@ XX.XX.2025 Lars Köhler
 [✅] Optimierung InjRate03 -> Rate und Masse nur solange Nadel offen ist -> Entfernen von Rauschen in der Massenauswertung
 [ ] Entpivotisiertes Diagramm für Statistikauswertung
 [ ] Auswahlfeld zur Bilder generieren
+[✅] Komplette Umstrukturierung des Skripts und Go2Git
 """
 
 import tkinter as tk
